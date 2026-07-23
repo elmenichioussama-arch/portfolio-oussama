@@ -1,0 +1,9 @@
+node_modules/
+node_modules_broken/
+.next/
+dist/
+.wrangler/
+.env
+.env.*
+!.env.example
+*.log
