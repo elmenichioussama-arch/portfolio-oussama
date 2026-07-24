@@ -19,6 +19,8 @@ import {
 
 type Props = {
   projects: Project[];
+  assetPrefix?: string;
+  contactMode?: "api" | "mailto";
 };
 
 type Filter = "Tous" | ProjectDiscipline;
@@ -48,7 +50,11 @@ function Arrow({ direction = "right" }: { direction?: "left" | "right" }) {
   return <span aria-hidden="true">{direction === "right" ? "→" : "←"}</span>;
 }
 
-export function PortfolioExperience({ projects }: Props) {
+export function PortfolioExperience({
+  projects,
+  assetPrefix = "",
+  contactMode = "api"
+}: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("Tous");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -63,6 +69,11 @@ export function PortfolioExperience({ projects }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const normalizedAssetPrefix = assetPrefix.endsWith("/")
+    ? assetPrefix.slice(0, -1)
+    : assetPrefix;
+  const assetUrl = (path: string) =>
+    path.startsWith("/") ? `${normalizedAssetPrefix}${path}` : path;
 
   const featured = projects.find((project) => project.featured) ?? projects[0];
   const visibleProjects = projects.filter(
@@ -173,6 +184,25 @@ export function PortfolioExperience({ projects }: Props) {
     const form = new FormData(event.currentTarget);
     const payload = Object.fromEntries(form.entries());
 
+    if (contactMode === "mailto") {
+      const subject = String(payload.subject ?? "Contact depuis le portfolio");
+      const body = [
+        `Nom : ${String(payload.name ?? "")}`,
+        `E-mail : ${String(payload.email ?? "")}`,
+        `Organisation : ${String(payload.organization ?? "")}`,
+        `Type de mission : ${subject}`,
+        "",
+        String(payload.message ?? "")
+      ].join("\n");
+
+      formRef.current?.reset();
+      setContactState({ phase: "success" });
+      window.location.href = `mailto:elmenichioussama@gmail.com?subject=${encodeURIComponent(
+        subject
+      )}&body=${encodeURIComponent(body)}`;
+      return;
+    }
+
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
@@ -257,7 +287,11 @@ export function PortfolioExperience({ projects }: Props) {
                 {label}
               </a>
             ))}
-            <a className="nav-cv" href="/docs/cv-el-menichi-oussama.pdf" download>
+            <a
+              className="nav-cv"
+              href={assetUrl("/docs/cv-el-menichi-oussama.pdf")}
+              download
+            >
               CV / PDF <Arrow />
             </a>
           </nav>
@@ -321,7 +355,7 @@ export function PortfolioExperience({ projects }: Props) {
             </div>
             <div className="portrait-wrap">
               <Image
-                src="/assets/img/profile-0.jpg"
+                src={assetUrl("/assets/img/profile-0.jpg")}
                 alt="Portrait d'Oussama El Menichi"
                 width="760"
                 height="760"
@@ -433,7 +467,7 @@ export function PortfolioExperience({ projects }: Props) {
                   {featured.documents.map((document) => (
                     <a
                       className="text-link"
-                      href={document.href}
+                      href={assetUrl(document.href)}
                       key={document.href}
                       download={document.download}
                       target={document.download ? undefined : "_blank"}
@@ -448,7 +482,7 @@ export function PortfolioExperience({ projects }: Props) {
               <div className="featured-visuals">
                 <figure className="mosaic-main">
                   <Image
-                    src={featured.gallery[1].src}
+                    src={assetUrl(featured.gallery[1].src)}
                     alt={featured.gallery[1].alt}
                     width={1376}
                     height={768}
@@ -458,7 +492,7 @@ export function PortfolioExperience({ projects }: Props) {
                 </figure>
                 <figure>
                   <Image
-                    src={featured.gallery[3].src}
+                    src={assetUrl(featured.gallery[3].src)}
                     alt={featured.gallery[3].alt}
                     width={1376}
                     height={768}
@@ -468,7 +502,7 @@ export function PortfolioExperience({ projects }: Props) {
                 </figure>
                 <figure>
                   <Image
-                    src={featured.gallery[4].src}
+                    src={assetUrl(featured.gallery[4].src)}
                     alt={featured.gallery[4].alt}
                     width={1376}
                     height={768}
@@ -514,7 +548,7 @@ export function PortfolioExperience({ projects }: Props) {
                   aria-label={`Ouvrir la galerie : ${project.title}`}
                 >
                   <Image
-                    src={project.cover.src}
+                    src={assetUrl(project.cover.src)}
                     alt=""
                     width={1376}
                     height={768}
@@ -550,7 +584,7 @@ export function PortfolioExperience({ projects }: Props) {
                     </button>
                     {project.documents.map((document) => (
                       <a
-                        href={document.href}
+                        href={assetUrl(document.href)}
                         key={document.href}
                         target="_blank"
                         rel="noreferrer"
@@ -646,7 +680,7 @@ export function PortfolioExperience({ projects }: Props) {
               <div className="credential-ledger">
                 {certifications.map(([issuer, title, year], index) => (
                   <a
-                    href="/docs/certificats.pdf"
+                    href={assetUrl("/docs/certificats.pdf")}
                     target="_blank"
                     rel="noreferrer"
                     key={`${issuer}-${title}`}
@@ -693,7 +727,9 @@ export function PortfolioExperience({ projects }: Props) {
             <h2>Mettons un nouveau système en service.</h2>
             <p>
               Automatisation, supervision, instrumentation ou digitalisation :
-              décrivez le besoin, le backend sécurisé enregistre votre demande.
+              {contactMode === "mailto"
+                ? " décrivez le besoin, puis envoyez-le directement depuis votre application e-mail."
+                : " décrivez le besoin, le backend sécurisé enregistre votre demande."}
             </p>
             <div className="direct-contact">
               <a href="mailto:elmenichioussama@gmail.com">
@@ -719,7 +755,8 @@ export function PortfolioExperience({ projects }: Props) {
             <div className="form-header">
               <span>REQ / NEW</span>
               <span>
-                <i aria-hidden="true" /> CHANNEL SECURE
+                <i aria-hidden="true" />{" "}
+                {contactMode === "mailto" ? "E-MAIL DIRECT" : "CHANNEL SECURE"}
               </span>
             </div>
             <div className="field-grid">
@@ -817,13 +854,17 @@ export function PortfolioExperience({ projects }: Props) {
             >
               {contactState.phase === "sending"
                 ? "Transmission…"
-                : "Transmettre la demande"}
+                : contactMode === "mailto"
+                  ? "Préparer l’e-mail"
+                  : "Transmettre la demande"}
               <Arrow />
             </button>
             <div className="form-status" aria-live="polite">
               {contactState.phase === "success" && (
                 <p className="status-success">
-                  Signal reçu. Merci — je vous répondrai rapidement.
+                  {contactMode === "mailto"
+                    ? "Votre message est prêt dans votre application e-mail."
+                    : "Signal reçu. Merci — je vous répondrai rapidement."}
                   {contactState.reference && (
                     <small>Référence : {contactState.reference}</small>
                   )}
@@ -876,7 +917,7 @@ export function PortfolioExperience({ projects }: Props) {
             </div>
             <figure className="dialog-figure">
               <Image
-                src={selectedProject.gallery[imageIndex].src}
+                src={assetUrl(selectedProject.gallery[imageIndex].src)}
                 alt={selectedProject.gallery[imageIndex].alt}
                 width={1376}
                 height={768}
@@ -907,7 +948,7 @@ export function PortfolioExperience({ projects }: Props) {
                   onClick={() => setImageIndex(index)}
                 >
                   <Image
-                    src={galleryImage.src}
+                    src={assetUrl(galleryImage.src)}
                     alt=""
                     width={160}
                     height={90}
