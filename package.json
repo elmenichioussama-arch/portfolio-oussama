@@ -8,8 +8,9 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
+    "build:github-pages": "vite build --config vite.github-pages.config.ts",
     "start": "vinext start",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern github-pages-dist",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
